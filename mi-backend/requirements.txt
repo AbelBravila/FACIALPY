@@ -1,4 +1,4 @@
 fastapi
 uvicorn
-face_recognition
+deepface
 pillow
