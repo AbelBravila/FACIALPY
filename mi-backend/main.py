@@ -1,24 +1,26 @@
 from fastapi import FastAPI, UploadFile, File
-from deepface import DeepFace
-import tempfile
+import face_recognition
 
 app = FastAPI()
 
+# Cargar rostro autorizado (usuario base)
+known_image = face_recognition.load_image_file("usuario.jpg")
+known_encoding = face_recognition.face_encodings(known_image)[0]
+
 @app.get("/")
 def home():
-    return {"mensaje": "Servidor FastAPI funcionando en Railway 🚂"}
+    return {"mensaje": "Servidor FastAPI funcionando en Render 🚀"}
 
 @app.post("/validar_rostro/")
 async def validar_rostro(file: UploadFile = File(...)):
     try:
-        # Guardar imagen temporal
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
-            tmp.write(await file.read())
-            tmp_path = tmp.name
+        img = face_recognition.load_image_file(file.file)
+        encodings = face_recognition.face_encodings(img)
 
-        # Comparar contra la imagen base "usuario.jpg"
-        result = DeepFace.verify(img1_path=tmp_path, img2_path="usuario.jpg", model_name="Facenet")
+        if len(encodings) == 0:
+            return {"autenticado": False, "mensaje": "No se detectó rostro"}
 
-        return {"autenticado": bool(result["verified"])}
+        match = face_recognition.compare_faces([known_encoding], encodings[0])
+        return {"autenticado": match[0]}
     except Exception as e:
         return {"autenticado": False, "error": str(e)}
